@@ -12,6 +12,8 @@ CAPTIONS_FILE = os.path.join(ROOT_DIR, "data", "Flickr8k", "captions.txt")
 MODEL_PATH = os.path.join(ROOT_DIR, "models", "cnn_lstm_captioning.pth")
 VOCAB_PATH = os.path.join(ROOT_DIR, "models", "vocab.pkl")
 
+print("VOCAB_PATH:", VOCAB_PATH)
+
 # Training settings
 EMBED_SIZE = 256
 HIDDEN_SIZE = 512
