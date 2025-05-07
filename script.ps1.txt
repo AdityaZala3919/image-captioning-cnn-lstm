@@ -1,0 +1,127 @@
+# This script uploads the contents of the current directory to a GitHub repository.
+# It handles initializing a Git repository, adding all files, committing,
+# adding a remote origin, and pushing.
+# Designed for use with PowerShell on Windows.
+#
+# IMPORTANT STEPS BEFORE RUNNING THIS SCRIPT:
+#
+# 1. Create an EMPTY repository on GitHub FIRST. Get its HTTPS or SSH URL.
+#
+# 2. If you have large files (like those in your 'Data' folder or '.pth' model files)
+#    that are 100MB or larger, you MUST use Git LFS.
+#    a) Install Git LFS: Download and run the installer from https://git-lfs.com/.
+#    b) Initialize Git LFS: Open PowerShell in your project directory and run:
+#       git lfs install
+#       (You only need to run 'git lfs install' once per computer)
+#    c) Track your large files: In PowerShell, in your project directory, tell Git LFS
+#       to track your 'Data' folder contents and '.pth' files by running:
+#       git lfs track "Data/*"
+#       git lfs track "*.pth"
+#       (This creates/updates a .gitattributes file. You MUST do this BEFORE running THIS script)
+#
+# 3. Navigate to your project folder in PowerShell or Windows Terminal.
+
+# --- Configuration ---
+# Replace with the URL of your GitHub repository
+$GITHUB_REPO_URL = ""
+
+# Default commit message if none is provided
+$DEFAULT_COMMIT_MESSAGE = "Initial commit of project files"
+# --- End Configuration ---
+
+# Function to display error messages and exit
+function Handle-Error {
+  param(
+    [string]$Message
+  )
+  Write-Error "Error: $Message"
+  exit 1
+}
+
+# Check if the GitHub repository URL is set
+if ([string]::IsNullOrEmpty($GITHUB_REPO_URL)) {
+  Write-Host "Please set the $GITHUB_REPO_URL variable in the script before running."
+  $GITHUB_REPO_URL = Read-Host -Prompt "Enter your GitHub repository URL (HTTPS or SSH)"
+  if ([string]::IsNullOrEmpty($GITHUB_REPO_URL)) {
+    Handle-Error "GitHub repository URL cannot be empty."
+  }
+}
+
+# Check if .git directory exists
+if (Test-Path -Path ".git" -PathType Container) {
+  Write-Host "Existing Git repository found."
+} else {
+  Write-Host "Initializing a new Git repository..."
+  git init
+  if ($LASTEXITCODE -ne 0) {
+    Handle-Error "Failed to initialize Git repository. Make sure Git is installed and in your PATH."
+  }
+}
+
+# Add all files, INCLUDING the .gitattributes file if it exists (essential for Git LFS)
+Write-Host "Adding all project files to staging (including .gitattributes if created by Git LFS)..."
+git add .
+if ($LASTEXITCODE -ne 0) {
+  Handle-Error "Failed to add files to staging."
+}
+
+# Get commit message from user or use default
+$user_commit_message = Read-Host -Prompt "Enter commit message (press Enter for default: '$DEFAULT_COMMIT_MESSAGE')"
+$COMMIT_MESSAGE = if ([string]::IsNullOrEmpty($user_commit_message)) { $DEFAULT_COMMIT_MESSAGE } else { $user_commit_message }
+
+# Commit changes
+Write-Host "Committing changes with message: '$COMMIT_MESSAGE'..."
+git commit -m "$COMMIT_MESSAGE"
+if ($LASTEXITCODE -ne 0) {
+  Handle-Error "Failed to commit changes. No changes detected or commit failed."
+}
+
+# Check if remote 'origin' already exists
+# Use Select-String to check the output of git remote -v
+$remote_exists = git remote -v | Select-String "^origin"
+if ($remote_exists) {
+  Write-Host "Remote 'origin' already exists."
+} else {
+  Write-Host "Adding remote origin: $GITHUB_REPO_URL..."
+  git remote add origin $GITHUB_REPO_URL
+  if ($LASTEXITCODE -ne 0) {
+    Handle-Error "Failed to add remote origin. Check the URL and your internet connection."
+  }
+}
+
+# Determine the default branch name (common defaults are 'main' or 'master')
+# For a brand new init, the default branch is usually 'main' now.
+# If the repository already exists and has a branch, we'll use that.
+$BRANCH_TO_PUSH = "main" # Default assumption for a new repo
+
+# Check if there's a local branch (handles existing repos)
+# Capture the output of the git command
+$local_branch_output = $(git branch --show-current)
+if (-not ([string]::IsNullOrEmpty($local_branch_output))) {
+    $BRANCH_TO_PUSH = $local_branch_output.Trim() # Trim whitespace from output
+} else {
+    # For a brand new repo where git branch --show-current might be empty initially,
+    # we assume 'main' as the target branch for the first push.
+    Write-Host "Assuming target branch is '$BRANCH_TO_PUSH' for initial push."
+}
+
+
+# Push to GitHub. Git LFS uploads happen automatically during the push.
+Write-Host "Pushing to GitHub repository ($GITHUB_REPO_URL) on branch '$BRANCH_TO_PUSH'..."
+Write-Host "Git LFS objects will be uploaded automatically if configured correctly."
+# Using -u sets the upstream branch for future pushes
+git push -u origin $BRANCH_TO_PUSH
+if ($LASTEXITCODE -ne 0) {
+  Write-Error "Failed to push to GitHub."
+  Write-Error "Possible reasons:"
+  Write-Error "- The remote URL is incorrect."
+  Write-Error "- You don't have push access to the repository (check SSH keys or PATs)."
+  Write-Error "- You have large files (>100MB) and Git LFS was NOT correctly installed, configured ('git lfs track'), or the .gitattributes file was not added/committed."
+  Write-Error "- The remote repository is not empty (e.g., has a README, causing divergent histories)."
+  Write-Error "  If the remote is not empty, you might need to pull first ('git pull origin $BRANCH_TO_PUSH --allow-unrelated-histories') and then push again. Use with caution as this merges histories."
+  exit 1
+}
+
+Write-Host "Successfully uploaded project contents to GitHub!"
+Write-Host "You can view your repository at: $GITHUB_REPO_URL"
+
