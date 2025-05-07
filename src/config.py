@@ -1,15 +1,16 @@
 import os
 import torch
 
-ROOT_DIR = "PATH_TO_YOUR_PROJECT_FOLDER"
+# Automatically determine the ROOT_DIR path
+ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # Data paths
-IMAGE_DIR = ROOT_DIR + "\\data\\Flickr8k\\Images"
-CAPTIONS_FILE = ROOT_DIR + "\\data\\Flickr8k\\captions.txt"
+IMAGE_DIR = os.path.join(ROOT_DIR, "data", "Flickr8k", "Images")
+CAPTIONS_FILE = os.path.join(ROOT_DIR, "data", "Flickr8k", "captions.txt")
 
 # Model save/load paths
-MODEL_PATH = ROOT_DIR + "\\models\\cnn_lstm_captioning.pth"
-VOCAB_PATH = ROOT_DIR + "\\models\\vocab.pkl"
+MODEL_PATH = os.path.join(ROOT_DIR, "models", "cnn_lstm_captioning.pth")
+VOCAB_PATH = os.path.join(ROOT_DIR, "models", "vocab.pkl")
 
 # Training settings
 EMBED_SIZE = 256
