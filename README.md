@@ -228,4 +228,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📧 Contact
 
-For questions or suggestions, please open an issue or contact [adityazala404@gmail.com](adityazala404@gmail.com).
+For questions or suggestions, please open an issue or contact [adityazala404@gmail.com](mailto:adityazala404@gmail.com).
